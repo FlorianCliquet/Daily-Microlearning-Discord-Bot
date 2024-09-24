@@ -11,6 +11,7 @@ const { fetch_leetcode_accounts } = require('../../database/mongodb');
 
 let apiURL;
 let leetcodeurl = "https://leetcode.com/u/";
+
 try {
     const configPath = path.resolve(__dirname, '../../../config.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -65,8 +66,23 @@ async function executeDailyRecap(client) {
                 const todaySubmissions = data.recentSubmissions.filter(submission => {
                     return submission.timestamp >= startOfDay && submission.timestamp <= endOfDay;
                 });
+                const submissionCounts = {};
 
-                // Create embed
+                // Count accepted/rejected submissions per title
+                todaySubmissions.forEach(submission => {
+                    const { title, statusDisplay, lang } = submission;
+                    if (!submissionCounts[title]) {
+                        submissionCounts[title] = { accepted: 0, rejected: 0, lang: lang };
+                    }
+
+                    if (statusDisplay === 'Accepted') {
+                        submissionCounts[title].accepted += 1;
+                    } else {
+                        submissionCounts[title].rejected += 1;
+                    }
+                });
+
+                // Create embed for Discord
                 const embed = new EmbedBuilder()
                     .setColor('#FF6F00') // A vibrant orange for emphasis
                     .setTitle(`📈 Daily Leetcode Recap for ${accountName}`)
@@ -74,9 +90,9 @@ async function executeDailyRecap(client) {
                     .setDescription(`[View your Leetcode profile here](${leetcodeUrl})`)
                     .setThumbnail('https://leetcode.com/static/images/LeetCode_logo_rvs.png') // Thumbnail for visual enhancement
                     .setTimestamp()
-                    .setFooter({ text: 'Leetcode Daily Recap', iconURL: 'https://leetcode.com/static/images/LeetCode_logo_rvs.png' }); // Footer with the logo
+                    .setFooter({ text: 'Leetcode Daily Recap', iconURL: 'https://leetcode.com/static/images/LeetCode_logo_rvs.png' });
 
-                // Add fields
+                // Add Leetcode stats
                 embed.addFields(
                     { name: '🗂 Total Problems Solved', value: data.totalSolved.toString(), inline: true },
                     { name: '🟢 Easy Problems Solved', value: data.easySolved.toString(), inline: true },
@@ -87,9 +103,9 @@ async function executeDailyRecap(client) {
                 );
 
                 // Add today's submissions
-                if (todaySubmissions.length > 0) {
-                    const recentSubmissions = todaySubmissions.map(sub => {
-                        return `**${sub.title}** (${sub.lang}) - *${sub.statusDisplay}*`;
+                if (Object.keys(submissionCounts).length > 0) {
+                    const recentSubmissions = Object.entries(submissionCounts).map(([title, counts]) => {
+                        return `**${title}** (${counts.lang}) - Accepted: ${counts.accepted}, Rejected: ${counts.rejected}`;
                     }).join('\n');
 
                     embed.addFields({ name: '📚 Today\'s Submissions', value: recentSubmissions, inline: false });
@@ -114,7 +130,6 @@ async function executeDailyRecap(client) {
         }
     }
 }
-
 
 async function dailyRecap(client) {
     console.log('Daily Leetcode Recap command executed');

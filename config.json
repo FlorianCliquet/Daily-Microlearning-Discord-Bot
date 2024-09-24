@@ -2,6 +2,6 @@
     "clientId": "your-discord-clientId",
     "guildId": "your-discord-guildId",
     "token": "your-discord-token",
-    "API_DAILY_LEETCODE": "https://alfa-leetcode-api.onrender.com/daily",
+    "API_DAILY_LEETCODE": "https://leetcode.com/graphql",
     "API_LEETCODE_ACCOUNT": "https://leetcode-api-faisalshohag.vercel.app/"
 }
